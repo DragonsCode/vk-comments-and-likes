@@ -13,7 +13,7 @@ group_msg_labeler.auto_rules = [rules.PeerRule(from_chat=True)]
 async def read_posts(message: Message):
     group = db.get_group_by_group_id(message.peer_id)
     if not group:
-        return
+        return 'Chat not found'
     
     check = get_like if group.theme else get_comment
     
