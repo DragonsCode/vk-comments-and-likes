@@ -1,5 +1,4 @@
 from config import vk_user
-import datetime
 
 
 async def get_like(id, url):
@@ -8,7 +7,7 @@ async def get_like(id, url):
     likes = get_likes.items
     for i in likes:
         if i == id:
-            return True
+            return True, 'ok'
     return False, 'like not found'
 
 

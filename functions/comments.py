@@ -1,5 +1,4 @@
 from config import vk_user
-import datetime
 
 
 async def get_comment(id, url):

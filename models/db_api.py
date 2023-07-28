@@ -1,80 +1,120 @@
 import sqlite3
 from models.dataobjects import *
 
+#NOTE: For group theme 1 is likes and 0 is comments
 
+#create tables
 def create_tables():
     con = sqlite3.connect('bot.db')
     cur = con.cursor()
-    cur.execute("CREATE TABLE IF NOT EXISTS users(id INTEGER PRIMARY KEY, user_id INTEGER NOT NULL, posts INTEGER NOT NULL DEFAULT 0, likes INTEGER NOT NULL DEFAULT 0)")
-    cur.execute("CREATE TABLE IF NOT EXISTS posts(id INTEGER PRIMARY KEY, user_id INTEGER NOT NULL, link TEXT NOT NULL, count INTEGER NOT NULL DEFAULT 0)")
-    cur.execute("CREATE TABLE IF NOT EXISTS likes(id INTEGER PRIMARY KEY, user_id INTEGER NOT NULL, link TEXT NOT NULL, count INTEGER NOT NULL DEFAULT 0)")
-    cur.execute("CREATE TABLE IF NOT EXISTS post_views(id INTEGER PRIMARY KEY, user_id INTEGER NOT NULL, post_id INTEGER NOT NULL)")
-    cur.execute("CREATE TABLE IF NOT EXISTS like_views(id INTEGER PRIMARY KEY, user_id INTEGER NOT NULL, like_id INTEGER NOT NULL)")
-
-#users
-def get_user_by_user_id(user_id: int) -> User:
-    con = sqlite3.connect('bot.db')
-    cur = con.cursor()
-    res = cur.execute('SELECT * FROM users WHERE user_id = ?', (user_id,))
-    user = res.fetchone()
+    cur.execute("CREATE TABLE IF NOT EXISTS posts(id INTEGER PRIMARY KEY, group_id INTEGER NOT NULL, link TEXT NOT NULL, vip INTEGER DEFAULT 0)")
+    cur.execute("CREATE TABLE IF NOT EXISTS groups(id INTEGER PRIMARY KEY, group_id INTEGER NOT NULL, theme INTEGER NOT NULL)")
+    cur.execute("CREATE TABLE IF NOT EXISTS admins(id INTEGER PRIMARY KEY, user_id INTEGER NOT NULL)")
+    con.commit()
     cur.close()
     con.close()
 
-    if not user:
-        return False
-    return User(*user)
 
-def get_all_users() -> list[User]:
+#admins
+def get_all_admins() -> list[Admin]:
     con = sqlite3.connect('bot.db')
     cur = con.cursor()
-    res = cur.execute('SELECT * FROM users')
+    res = cur.execute('SELECT * FROM admins')
     res = res.fetchall()
     cur.close()
     con.close()
 
-    users = []
+    admins = []
     for i in res:
-        users.append(User(*i))
+        admins.append(Admin(*i))
     
-    return users
+    return admins
 
-def insert_user(user_id: int):
+def insert_admin(user_id: int):
     con = sqlite3.connect('bot.db')
     cur = con.cursor()
-    res = cur.execute("SELECT user_id FROM users WHERE user_id = ?", (user_id,))
-    is_in_db = res.fetchall()
+    res = cur.execute("SELECT * FROM admins WHERE user_id = ?", (user_id,))
+    is_in_db = res.fetchone()
     if is_in_db:
         cur.close()
         con.close()
         return False
-    cur.execute("INSERT INTO users(user_id) VALUES (?)", (user_id,))
+    cur.execute("INSERT INTO admins(user_id) VALUES (?)", (user_id,))
     con.commit()
     cur.close()
     con.close()
     return True
 
-def change_user_posts(user_id: int, posts: int):
+def delete_admin(user_id: int):
     con = sqlite3.connect('bot.db')
     cur = con.cursor()
-    user = get_user_by_user_id(user_id)
-    if not user:
+    res = cur.execute("SELECT * FROM admins WHERE user_id = ?", (user_id,))
+    is_in_db = res.fetchone()
+    if not is_in_db:
         cur.close()
         con.close()
         return False
-    cur.execute('UPDATE users SET posts = ? WHERE user_id = ?', (posts, user_id,))
+    cur.execute("DELETE FROM admins WHERE user_id = ?", (user_id,))
     con.commit()
     cur.close()
     con.close()
     return True
 
-def delete_user(user_id: int):
+
+#groups
+def get_group_by_group_id(group_id: int) -> Group:
     con = sqlite3.connect('bot.db')
     cur = con.cursor()
-    cur.execute('DELETE FROM post_views WHERE user_id = ?', (user_id,))
-    cur.execute('DELETE FROM like_views WHERE user_id = ?', (user_id,))
-    cur.execute('DELETE FROM posts WHERE user_id = ?', (user_id,))
-    cur.execute('DELETE FROM likes WHERE user_id = ?', (user_id,))
-    cur.execute('DELETE FROM users WHERE user_id = ?', (user_id,))
+    res = cur.execute('SELECT * FROM groups WHERE group_id = ?', (group_id,))
+    group = res.fetchone()
+    cur.close()
+    con.close()
+
+    if not group:
+        return False
+    return Group(*group)
+
+def get_groups_by_theme(theme: int) -> list[Group]:
+    con = sqlite3.connect('bot.db')
+    cur = con.cursor()
+    res = cur.execute('SELECT * FROM groups WHERE theme = ?', (theme,))
+    res = res.fetchall()
+    cur.close()
+    con.close()
+
+    groups = []
+    for i in res:
+        groups.append(Group(*i))
+    
+    return groups
+
+def insert_group(group_id: int, theme: int):
+    con = sqlite3.connect('bot.db')
+    cur = con.cursor()
+    res = cur.execute("SELECT * FROM groups WHERE group_id = ?", (group_id,))
+    is_in_db = res.fetchone()
+    if is_in_db:
+        cur.close()
+        con.close()
+        return Group(*is_in_db), False
+    cur.execute("INSERT INTO groups(group_id, theme) VALUES (?, ?)", (group_id, theme,))
+    con.commit()
+    cur.close()
+    con.close()
+    return 0, True
+
+def delete_group(group_id: int):
+    con = sqlite3.connect('bot.db')
+    cur = con.cursor()
+    res = cur.execute("SELECT * FROM groups WHERE group_id = ?", (group_id,))
+    is_in_db = res.fetchone()
+    if not is_in_db:
+        cur.close()
+        con.close()
+        return False
+    cur.execute('DELETE FROM posts WHERE group_id = ?', (group_id,))
+    cur.execute('DELETE FROM likes WHERE group_id = ?', (group_id,))
+    cur.execute('DELETE FROM groups WHERE group_id = ?', (group_id,))
     con.commit()
     cur.close()
     con.close()
@@ -82,10 +122,10 @@ def delete_user(user_id: int):
 
 
 #posts
-def get_posts_by_user_id(user_id: int) -> list[Post]:
+def get_posts_by_group_id(group_id: int) -> list[Post]:
     con = sqlite3.connect('bot.db')
     cur = con.cursor()
-    res = cur.execute('SELECT * FROM posts WHERE user_id = ?', (user_id,))
+    res = cur.execute('SELECT * FROM posts WHERE group_id = ?', (group_id,))
     res = res.fetchall()
     cur.close()
     con.close()
@@ -98,14 +138,14 @@ def get_posts_by_user_id(user_id: int) -> list[Post]:
         posts.append(Post(*i))
     return posts
 
-def get_all_posts(limit: int=0, vip: int=0) -> list[Post]:
+def get_all_posts_in_group(group_id: int, limit: int=0, vip: int=0) -> list[Post]:
     con = sqlite3.connect('bot.db')
     cur = con.cursor()
 
     if limit == 0:
-        res = cur.execute('SELECT * FROM posts WHERE vip = ? ORDER BY id DESC', (vip,))
+        res = cur.execute('SELECT * FROM posts WHERE vip = ? AND group_id = ? ORDER BY id DESC', (vip, group_id,))
     else:
-        res = cur.execute('SELECT * FROM posts WHERE vip = ? ORDER BY id DESC LIMIT ?', (vip, limit,))
+        res = cur.execute('SELECT * FROM posts WHERE vip = ? AND group_id = ? ORDER BY id DESC LIMIT ?', (vip, group_id, limit,))
     
     res = res.fetchall()
     cur.close()
@@ -117,24 +157,24 @@ def get_all_posts(limit: int=0, vip: int=0) -> list[Post]:
     
     return posts
 
-def get_dating_vip_posts() -> list[Post]:
+def get_dating_vip_posts(group_id: int) -> list[Post]:
     posts = []
-    res = get_all_posts(vip=1)
+    res = get_all_posts_in_group(group_id, vip=1)
     for i in res:
         posts.append(Post(*i))
     return posts
 
-def get_dating_posts() -> list[Post]:
+def get_dating_posts(group_id) -> list[Post]:
     posts = []
-    res = get_all_posts(limit=5)
+    res = get_all_posts_in_group(group_id, limit=5)
     for i in res:
         posts.append(Post(*i))
     return posts
 
-def insert_post(user_id: int, link: str):
+def insert_post(group_id: int, link: str, vip: int=0):
     con = sqlite3.connect('bot.db')
     cur = con.cursor()
-    cur.execute("INSERT INTO posts(user_id, link) VALUES (?, ?)", (user_id, link,))
+    cur.execute("INSERT INTO posts(group_id, link, vip) VALUES (?, ?, ?)", (group_id, link, vip,))
     con.commit()
     cur.close()
     con.close()
@@ -143,190 +183,13 @@ def insert_post(user_id: int, link: str):
 def delete_post(id):
     con = sqlite3.connect('bot.db')
     cur = con.cursor()
-    cur.execute('DELETE FROM posts WHERE id = ?', (id,))
-    con.commit()
-    cur.close()
-    con.close()
-    return True
-
-
-#likes
-def get_likes_by_user_id(user_id: int) -> list[Like]:
-    con = sqlite3.connect('bot.db')
-    cur = con.cursor()
-    res = cur.execute('SELECT * FROM likes WHERE user_id = ?', (user_id,))
-    res = res.fetchall()
-    cur.close()
-    con.close()
-
-    if not res:
+    res = cur.execute("SELECT * FROM posts WHERE id = ?", (id,))
+    is_in_db = res.fetchone()
+    if not is_in_db:
+        cur.close()
+        con.close()
         return False
-    
-    likes = []
-    for i in res:
-        likes.append(Like(*i))
-    return likes
-
-def get_all_likes(limit: int=0, vip: int=0) -> list[Like]:
-    con = sqlite3.connect('bot.db')
-    cur = con.cursor()
-
-    if limit == 0:
-        res = cur.execute('SELECT * FROM likes WHERE vip = ? ORDER BY id DESC', (vip,))
-    else:
-        res = cur.execute('SELECT * FROM likes WHERE vip = ? ORDER BY id DESC LIMIT ?', (vip, limit,))
-    
-    res = res.fetchall()
-    cur.close()
-    con.close()
-
-    likes = []
-    for i in res:
-        likes.append(Like(*i))
-    
-    return likes
-
-def get_dating_vip_likes() -> list[Like]:
-    likes = []
-    res = get_all_likes(vip=1)
-    for i in res:
-        likes.append(Like(*i))
-    return likes
-
-def get_dating_likes() -> list[Like]:
-    likes = []
-    res = get_all_posts(limit=5)
-    for i in res:
-        likes.append(Like(*i))
-    return likes
-
-def insert_like(user_id: int, link: str):
-    con = sqlite3.connect('bot.db')
-    cur = con.cursor()
-    cur.execute("INSERT INTO likes(user_id, link) VALUES (?, ?)", (user_id, link,))
-    con.commit()
-    cur.close()
-    con.close()
-    return True
-
-def delete_like(id):
-    con = sqlite3.connect('bot.db')
-    cur = con.cursor()
-    cur.execute('DELETE FROM likes WHERE id = ?', (id,))
-    con.commit()
-    cur.close()
-    con.close()
-    return True
-
-
-#post views
-def get_post_views_by_user_id(user_id: int) -> list[PostView]:
-    con = sqlite3.connect('bot.db')
-    cur = con.cursor()
-    res = cur.execute('SELECT * FROM post_views WHERE user_id = ?', (user_id,))
-    views = res.fetchall()
-    cur.close()
-    con.close()
-
-    views = []
-    for i in views:
-        views.append(PostView(*i))
-    
-    return views
-
-def get_post_views_by_post_id(post_id: int) -> list[PostView]:
-    con = sqlite3.connect('bot.db')
-    cur = con.cursor()
-    res = cur.execute('SELECT * FROM post_views WHERE post_id = ?', (post_id,))
-    views = res.fetchall()
-    cur.close()
-    con.close()
-
-    views = []
-    for i in views:
-        views.append(PostView(*i))
-    
-    return views
-
-def insert_post_view(user_id: int, post_id: int):
-    con = sqlite3.connect('bot.db')
-    cur = con.cursor()
-    cur.execute("INSERT INTO post_views(user_id, post_id) VALUES (?, ?)", (user_id, post_id,))
-    con.commit()
-    cur.close()
-    con.close()
-    return True
-
-def delete_post_views_by_post_id(post_id: int):
-    con = sqlite3.connect('bot.db')
-    cur = con.cursor()
-    cur.execute('DELETE FROM post_views WHERE post_id = ?', (post_id,))
-    con.commit()
-    cur.close()
-    con.close()
-    return True
-
-def delete_post_views_by_user_id(user_id: int):
-    con = sqlite3.connect('bot.db')
-    cur = con.cursor()
-    cur.execute('DELETE FROM post_views WHERE user_id = ?', (user_id,))
-    con.commit()
-    cur.close()
-    con.close()
-    return True
-
-
-#like views
-def get_like_views_by_user_id(user_id: int) -> list[LikeView]:
-    con = sqlite3.connect('bot.db')
-    cur = con.cursor()
-    res = cur.execute('SELECT * FROM like_views WHERE user_id = ?', (user_id,))
-    views = res.fetchall()
-    cur.close()
-    con.close()
-
-    views = []
-    for i in views:
-        views.append(LikeView(*i))
-    
-    return views
-
-def get_like_views_by_like_id(like_id: int) -> list[LikeView]:
-    con = sqlite3.connect('bot.db')
-    cur = con.cursor()
-    res = cur.execute('SELECT * FROM like_views WHERE like_id = ?', (like_id,))
-    views = res.fetchall()
-    cur.close()
-    con.close()
-
-    views = []
-    for i in views:
-        views.append(LikeView(*i))
-    
-    return views
-
-def insert_like_view(user_id: int, like_id: int):
-    con = sqlite3.connect('bot.db')
-    cur = con.cursor()
-    cur.execute("INSERT INTO like_views(user_id, like_id) VALUES (?, ?)", (user_id, like_id,))
-    con.commit()
-    cur.close()
-    con.close()
-    return True
-
-def delete_like_views_by_like_id(like_id: int):
-    con = sqlite3.connect('bot.db')
-    cur = con.cursor()
-    cur.execute('DELETE FROM like_views WHERE like_id = ?', (like_id,))
-    con.commit()
-    cur.close()
-    con.close()
-    return True
-
-def delete_like_views_by_user_id(user_id: int):
-    con = sqlite3.connect('bot.db')
-    cur = con.cursor()
-    cur.execute('DELETE FROM like_views WHERE user_id = ?', (user_id,))
+    cur.execute('DELETE FROM posts WHERE id = ?', (id,))
     con.commit()
     cur.close()
     con.close()
