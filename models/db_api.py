@@ -30,6 +30,18 @@ def get_all_admins() -> list[Admin]:
     
     return admins
 
+def get_admin_by_user_id(user_id: int) -> Admin:
+    con = sqlite3.connect('bot.db')
+    cur = con.cursor()
+    res = cur.execute('SELECT * FROM admins WHERE user_id = ?', (user_id,))
+    admin = res.fetchone()
+    cur.close()
+    con.close()
+
+    if not admin:
+        return False
+    return Admin(*admin)
+
 def insert_admin(user_id: int):
     con = sqlite3.connect('bot.db')
     cur = con.cursor()
@@ -62,6 +74,20 @@ def delete_admin(user_id: int):
 
 
 #groups
+def get_all_groups() -> list[Group]:
+    con = sqlite3.connect('bot.db')
+    cur = con.cursor()
+    res = cur.execute('SELECT * FROM groups')
+    res = res.fetchall()
+    cur.close()
+    con.close()
+
+    groups = []
+    for i in res:
+        groups.append(Group(*i))
+    
+    return groups
+
 def get_group_by_group_id(group_id: int) -> Group:
     con = sqlite3.connect('bot.db')
     cur = con.cursor()
@@ -113,7 +139,6 @@ def delete_group(group_id: int):
         con.close()
         return False
     cur.execute('DELETE FROM posts WHERE group_id = ?', (group_id,))
-    cur.execute('DELETE FROM likes WHERE group_id = ?', (group_id,))
     cur.execute('DELETE FROM groups WHERE group_id = ?', (group_id,))
     con.commit()
     cur.close()
@@ -161,14 +186,14 @@ def get_dating_vip_posts(group_id: int) -> list[Post]:
     posts = []
     res = get_all_posts_in_group(group_id, vip=1)
     for i in res:
-        posts.append(Post(*i))
+        posts.append(i)
     return posts
 
-def get_dating_posts(group_id) -> list[Post]:
+def get_dating_posts(group_id: int) -> list[Post]:
     posts = []
     res = get_all_posts_in_group(group_id, limit=5)
     for i in res:
-        posts.append(Post(*i))
+        posts.append(i)
     return posts
 
 def insert_post(group_id: int, link: str, vip: int=0):
@@ -180,7 +205,7 @@ def insert_post(group_id: int, link: str, vip: int=0):
     con.close()
     return True
 
-def delete_post(id):
+def delete_post(id: int):
     con = sqlite3.connect('bot.db')
     cur = con.cursor()
     res = cur.execute("SELECT * FROM posts WHERE id = ?", (id,))

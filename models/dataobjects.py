@@ -9,7 +9,7 @@ class Group:
 
     def __str__(self):
         themes = {0: 'comments', 1: 'likes'}
-        res = f'Group info:\n\nGroup ID: {self.group_id}\nTheme: {themes[self.theme]}'
+        res = f'Group info:\nID: {self.id}\nGroup ID: {self.group_id}\nTheme: {themes[self.theme]}'
         return res
     
     def __repr__(self):
@@ -28,7 +28,7 @@ class Admin:
     user_id: int
 
     def __str__(self):
-        res = f'Admin info:\n\nUser ID: {self.user_id}\nAdmin ID: {self.id}'
+        res = f'Admin info:\n\nID: {self.id}\nUser ID: {self.user_id}'
         return res
     
     def __repr__(self):
