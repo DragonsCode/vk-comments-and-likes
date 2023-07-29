@@ -36,13 +36,14 @@ async def groups(message: Message):
         keyboard.add(Callback(f'{vkgroup.chat_settings.title}', {'group': f'{i.group_id}'}))
         keyboard.row()
     
-    keyboard.add(Text('Add group', {'groups': 'add'}), color=KeyboardButtonColor.POSITIVE)
-    keyboard.add(Text('Back', {'admin': 'menu'}), color=KeyboardButtonColor.NEGATIVE)
+    keyboard.add(Text('Добавить группу', {'groups': 'add'}), color=KeyboardButtonColor.POSITIVE)
+    keyboard.row()
+    keyboard.add(Text('Назад', {'admin': 'menu'}), color=KeyboardButtonColor.NEGATIVE)
 
-    await message.answer('Groups', keyboard=keyboard)
+    await message.answer('Группы', keyboard=keyboard)
 
 
-@admin_group_labeler.private_message(text='Add group')
+@admin_group_labeler.private_message(text='Добавить группу')
 async def add_group_state(message: Message):
     admins = db.get_all_admins()
     admin_ids = [i.user_id for i in admins]
@@ -52,7 +53,7 @@ async def add_group_state(message: Message):
     
     ctx.set(message.peer_id, {})
     await state_dispenser.set(message.peer_id, GroupData.ADD)
-    return 'Enter the peer ID of group'
+    return 'Введите peer ID группы'
 
 
 @admin_group_labeler.private_message(state=GroupData.ADD)
@@ -60,7 +61,7 @@ async def add_group_id(message: Message):
     if not message.text.isdigit():
         await state_dispenser.delete(message.peer_id)
         ctx.set(message.peer_id, {})
-        await message.answer('Peer ID of group should be a number')
+        await message.answer('Peer ID группы должен быть числом')
         await groups(message)
         return
     
@@ -69,7 +70,7 @@ async def add_group_id(message: Message):
     if group:
         await state_dispenser.delete(message.peer_id)
         ctx.set(message.peer_id, {})
-        await message.answer('Group is already in database')
+        await message.answer('Группа уже существует в базе данных')
         await groups(message)
         return
     
@@ -77,20 +78,20 @@ async def add_group_id(message: Message):
     if not vkgroup:
         await state_dispenser.delete(message.peer_id)
         ctx.set(message.peer_id, {})
-        await message.answer(f'Something went wrong: {err}')
+        await message.answer(f'Что-то пошло не так: {err}')
         await groups(message)
         return
 
     ctx.set(message.peer_id, {'group_id': message.text})
     await state_dispenser.set(message.peer_id, GroupData.THEME)
 
-    return 'Enter the theme of group\nFor group theme 1 is likes and 0 is comments'
+    return 'Введите тему группы\nДля темы группы 1 это лайки и 0 это комментарии'
 
 
 @admin_group_labeler.private_message(state=GroupData.THEME)
 async def add_group_theme(message: Message):
     if not message.text in ['0', '1', 0, 1]:
-        return 'Please, enter the theme of group correctly!\nFor group theme 1 is likes and 0 is comments'
+        return 'Пожалуйста, введите тему группы правильно! \nДля темы группы 1 это лайки и 0 это комментарии'
     
     data = ctx.get(message.peer_id)
     group_id = int(data['group_id'])
@@ -103,7 +104,7 @@ async def add_group_theme(message: Message):
 
     group = db.get_group_by_group_id(group_id)
 
-    await message.answer(f'Group added:\n\n{str(group)}')
+    await message.answer(f'Группа добавлена:\n\n{str(group)}')
     await groups(message)
 
 
@@ -124,24 +125,24 @@ async def groups_event(event: GroupTypes.MessageEvent):
         group = db.get_group_by_group_id(int(group_id))
         vkgroup, err = await get_group(group.group_id)
         if not vkgroup:
-            await api.messages.send(peer_id=event.object.peer_id, message=f'Something went wrong: {err}', random_id=0)
+            await api.messages.send(peer_id=event.object.peer_id, message=f'Что-то пошло не так: {err}', random_id=0)
             return
 
         group_vip_posts = db.get_dating_vip_posts(group.group_id)
 
-        text = f'Group {vkgroup.chat_settings.title}:\n\n{str(group)}\n\nVIP posts:'
+        text = f'Группа {vkgroup.chat_settings.title}:\n\n{str(group)}\n\nVIP посты:'
         for i in group_vip_posts:
             text += f'\nID: {i.id} link: {i.link}'
         
         keyboard = Keyboard(inline=True)
-        keyboard.add(Text('Delete post'))
+        keyboard.add(Text('Удалить пост'))
         keyboard.row()
-        keyboard.add(Text('Add VIP post', {'post_group_id': f'{group.group_id}'}))
+        keyboard.add(Text('Добавить VIP пост', {'post_group_id': f'{group.group_id}'}))
         keyboard.row()
-        keyboard.add(Text('Delete this group', {'del_group_id': f'{group.group_id}'}))
+        keyboard.add(Text('Удалить эту группу', {'del_group_id': f'{group.group_id}'}))
         keyboard.row()
 
-        keyboard.add(Text('Back', {'admin': 'groups'}), color=KeyboardButtonColor.NEGATIVE)
+        keyboard.add(Text('Назад', {'admin': 'groups'}), color=KeyboardButtonColor.NEGATIVE)
 
 
         await api.messages.send(peer_id=event.object.peer_id, message=text, keyboard=keyboard, random_id=0)
@@ -159,7 +160,7 @@ async def groups_event(event: GroupTypes.MessageEvent):
         )
 
 
-@admin_group_labeler.private_message(text='Delete post')
+@admin_group_labeler.private_message(text='Удалить пост')
 async def delete_vip_post_state(message: Message):
     admins = db.get_all_admins()
     admin_ids = [i.user_id for i in admins]
@@ -169,7 +170,7 @@ async def delete_vip_post_state(message: Message):
     
     ctx.set(message.peer_id, {})
     await state_dispenser.set(message.peer_id, PostData.POST)
-    return 'Enter the ID of post'
+    return 'Введите ID поста'
 
 
 @admin_group_labeler.private_message(state=PostData.POST)
@@ -178,22 +179,22 @@ async def delete_vip_post(message: Message):
     ctx.set(message.peer_id, {})
 
     if not message.text.isdigit():
-        await message.answer('ID of post should be a number')
+        await message.answer('ID поста должен быть числом')
         await groups(message)
         return
     
     deleted = db.delete_post(int(message.text))
 
     if not deleted:
-        await message.answer('Post not found')
+        await message.answer('Пост не найден')
         await groups(message)
         return
 
-    await message.answer('Post deleted')
+    await message.answer('Пост удалён')
     await groups(message)
 
 
-@admin_group_labeler.private_message(text='Add VIP post')
+@admin_group_labeler.private_message(text='Добавить VIP пост')
 async def add_vip_post_state(message: Message):
     admins = db.get_all_admins()
     admin_ids = [i.user_id for i in admins]
@@ -204,18 +205,18 @@ async def add_vip_post_state(message: Message):
     try:
         group_id = message.get_payload_json().get('post_group_id', False)
     except AttributeError:
-        await message.answer('I cannot see the group ID in the payload')
+        await message.answer('Не вижу peer ID группы в payload')
         await groups(message)
         return
 
     if not group_id:
-        await message.answer('I cannot see the group ID in the payload')
+        await message.answer('Не вижу peer ID группы в payload')
         await groups(message)
         return
     
     ctx.set(message.peer_id, {'group_id': group_id})
     await state_dispenser.set(message.peer_id, GroupData.ADD_VIP)
-    return 'Enter the link to the post'
+    return 'Введите ссылку на пост'
 
 
 @admin_group_labeler.private_message(state=GroupData.ADD_VIP)
@@ -230,17 +231,17 @@ async def add_vip_post(message: Message):
     ok, comm = await method(message.text)
 
     if not ok:
-        await message.answer(f'Something is wrong with this link: {comm}')
+        await message.answer(f'Что-то не так с этой ссылкой: {comm}')
         await groups(message)
         return
     
     db.insert_post(group.group_id, message.text, 1)
 
-    await message.answer(f'VIP post added to this group:\n\n{str(group)}')
+    await message.answer(f'VIP пост добавлен в эту группу:\n\n{str(group)}')
     await groups(message)
 
 
-@admin_group_labeler.private_message(text='Delete this group')
+@admin_group_labeler.private_message(text='Удалить эту группу')
 async def delete_this_group(message: Message):
     admins = db.get_all_admins()
     admin_ids = [i.user_id for i in admins]
@@ -251,21 +252,21 @@ async def delete_this_group(message: Message):
     try:
         group_id = message.get_payload_json().get('del_group_id', False)
     except AttributeError:
-        await message.answer('I cannot see the group ID in the payload')
+        await message.answer('Не вижу peer ID группы в payload')
         await groups(message)
         return
 
     if not group_id:
-        await message.answer('I cannot see the group ID in the payload')
+        await message.answer('Не вижу peer ID группы в payload')
         await groups(message)
         return
     
     deleted = db.delete_group(int(group_id))
 
     if not deleted:
-        await message.answer('Group not found')
+        await message.answer('Группа не найдена')
         await groups(message)
         return
 
-    await message.answer('Group deleted')
+    await message.answer('Группа удалена')
     await groups(message)

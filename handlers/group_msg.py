@@ -15,7 +15,7 @@ group_msg_labeler.auto_rules = [rules.PeerRule(from_chat=True)]
 async def read_posts(message: Message):
     group = db.get_group_by_group_id(message.peer_id)
     if not group:
-        return f'Chat not found\n\npeer_id: {message.peer_id}'
+        return f'Чат не найден\n\npeer_id: {message.peer_id}'
     
     check = get_like if group.theme else get_comment
     
@@ -26,7 +26,7 @@ async def read_posts(message: Message):
     user = await api.users.get(user_id)
     name = f'{user[0].first_name} {user[0].last_name}'
 
-    themes = {0: 'comment', 1: 'like'}
+    themes = {0: 'комментарий, содержащий более чем 10 символов,', 1: 'лайк'}
 
     for i in vip_posts:
         vip_ok, vip_comm = await check(user_id, i.link)
@@ -48,12 +48,12 @@ async def read_posts(message: Message):
             posts_links = [i.link for i in posts]
 
             if message.text in vip_posts_links:
+                await message.answer(f'[id{user_id}|{name}], ваша ссылка уже находится в списке VIP ссылок')
                 await api.messages.delete(delete_for_all=True, peer_id=message.peer_id, cmids=[message.conversation_message_id])
-                await message.answer(f'[id{user_id}|{name}], your link is already in vip posts')
                 return
             elif message.text in posts_links:
+                await message.answer(f'[id{user_id}|{name}], ваша ссылка уже находится в последних 5 ссылках')
                 await api.messages.delete(delete_for_all=True, peer_id=message.peer_id, cmids=[message.conversation_message_id])
-                await message.answer(f'[id{user_id}|{name}], your link is already in last 5 posts')
                 return
 
             method = get_like_post if group.theme else get_post
@@ -61,13 +61,13 @@ async def read_posts(message: Message):
 
             if ok:
                 db.insert_post(message.peer_id, message.text)
-                await message.answer(f'[id{user_id}|{name}], your link inserted')
+                await message.answer(f'[id{user_id}|{name}], ваша ссылка принята')
             else:
                 await message.answer(f'[id{user_id}|{name}] {comm}')
                 await api.messages.delete(delete_for_all=True, peer_id=message.peer_id, cmids=[message.conversation_message_id])
         
         else:
-            text = f'[id{user_id}|{name}], you should leave a {themes[group.theme]} on these posts:\n'
+            text = f'[id{user_id}|{name}], вы должны оставить {themes[group.theme]} на этих постах:\n'
             for index, i in enumerate(posts, start=1):
                 text+= f'\n{index} - {i.link}'
             
@@ -75,7 +75,7 @@ async def read_posts(message: Message):
             await api.messages.delete(delete_for_all=True, peer_id=message.peer_id, cmids=[message.conversation_message_id])
 
     else:
-        text = f'[id{user_id}|{name}], firstly, you should leave a {themes[group.theme]} on these vip posts:\n'
+        text = f'[id{user_id}|{name}], прежде чем начать пользоваться, вы должны оставить {themes[group.theme]} на этих VIP постах:\n'
         for index, i in enumerate(vip_posts, start=1):
             text+= f'\n{index} - {i.link}'
         

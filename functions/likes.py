@@ -3,12 +3,12 @@ from config import vk_user
 
 async def get_like(id, url):
     ids = url.split('wall')[1].split('_')
-    get_likes = await vk_user.api.likes.get_list(owner_id=ids[0], item_id=ids[1])
+    get_likes = await vk_user.api.likes.get_list(type='post', owner_id=ids[0], item_id=ids[1])
     likes = get_likes.items
     for i in likes:
         if i == id:
-            return True, 'ok'
-    return False, 'like not found'
+            return True, 'Ок'
+    return False, 'Лайк не найден'
 
 
 async def get_like_post(url):
@@ -20,7 +20,7 @@ async def get_like_post(url):
         id = url[-1]
         int(id)
     except Exception as e:
-        return False, 'Invalid post'
+        return False, 'Неправильная ссылка на пост или же пост не найден'
     post = await vk_user.api.wall.get_by_id(posts=[wall[1]])
     type = 'group'
     author = post[0].from_id

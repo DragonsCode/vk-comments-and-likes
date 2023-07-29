@@ -8,8 +8,8 @@ class Group:
     theme: str
 
     def __str__(self):
-        themes = {0: 'comments', 1: 'likes'}
-        res = f'Group info:\nID: {self.id}\nGroup ID: {self.group_id}\nTheme: {themes[self.theme]}'
+        themes = {0: 'комментарии', 1: 'лайки'}
+        res = f'Информация о группе:\nID: {self.id}\nID группы: {self.group_id}\nТема: {themes[self.theme]}'
         return res
     
     def __repr__(self):
@@ -28,7 +28,7 @@ class Admin:
     user_id: int
 
     def __str__(self):
-        res = f'Admin info:\n\nID: {self.id}\nUser ID: {self.user_id}'
+        res = f'Информация об админе:\n\nID: {self.id}\nUser ID: {self.user_id}'
         return res
     
     def __repr__(self):

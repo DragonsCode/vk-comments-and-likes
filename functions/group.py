@@ -9,4 +9,4 @@ async def get_group(group_id: int):
     if group.items:
         return group.items[0], 0
     else:
-        return False, 'cannot find group'
+        return False, 'Группа не найдена'

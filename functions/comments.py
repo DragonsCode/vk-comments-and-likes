@@ -12,8 +12,8 @@ async def get_comment(id, url):
             if len(i.text) > 10:
                 return True, i.text
     if com:
-        return False, 'comment is too short'
-    return False, 'comment not found'
+        return False, 'Комментарий слишком короткий'
+    return False, 'Комментарий не найден'
 
 
 async def get_post(url):
@@ -25,7 +25,7 @@ async def get_post(url):
         id = url[-1]
         int(id)
     except Exception as e:
-        return False, 'Invalid post'
+        return False, 'Неправильная ссылка на пост или же пост не найден'
     post = await vk_user.api.wall.get_by_id(posts=[wall[1]])
     type = 'group'
     author = post[0].from_id
