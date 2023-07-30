@@ -12,7 +12,7 @@ async def get_comment(id, url):
         if i.from_id == id:
             com = True
             words = [j for j in re.findall(r'\w+', i.text) if len(j) > 3]
-            if len(words) > 5:
+            if len(words) >= 5:
                 return True, i.text
     if com:
         return False, 'Комментарий слишком короткий'
