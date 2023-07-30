@@ -26,7 +26,7 @@ async def read_posts(message: Message):
     user = await api.users.get(user_id)
     name = f'{user[0].first_name} {user[0].last_name}'
 
-    themes = {0: 'комментарий, содержащий более чем 10 символов,', 1: 'лайк'}
+    themes = {0: 'комментарий, содержащий как минимум 5 слов,', 1: 'лайк'}
 
     for i in vip_posts:
         vip_ok, vip_comm = await check(user_id, i.link)
