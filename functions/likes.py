@@ -13,6 +13,7 @@ async def get_like(id, url):
 
 async def get_like_post(url):
     wall = None
+    post = None
     try:
         wall = url.split('wall')
         if wall[0][-1] == '=':
@@ -20,8 +21,11 @@ async def get_like_post(url):
         id = url[-1]
         int(id)
     except Exception as e:
-        return False, 'Неправильная ссылка на пост или же пост не найден'
-    post = await vk_user.api.wall.get_by_id(posts=[wall[1]])
+        return False, 'Неправильная ссылка на пост'
+   try:
+        post = await vk_user.api.wall.get_by_id(posts=[wall[1]])
+    except Exception as e:
+        return False, 'Пост не найден или же страница с постом закрытая'
     type = 'group'
     author = post[0].from_id
     if author > 0:
