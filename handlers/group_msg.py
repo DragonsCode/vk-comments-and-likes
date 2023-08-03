@@ -13,6 +13,8 @@ group_msg_labeler.auto_rules = [rules.PeerRule(from_chat=True)]
 
 @group_msg_labeler.chat_message()
 async def read_posts(message: Message):
+    if not message.text:
+        return
     group = db.get_group_by_group_id(message.peer_id)
     if not group:
         return f'Чат не найден\n\npeer_id: {message.peer_id}'
