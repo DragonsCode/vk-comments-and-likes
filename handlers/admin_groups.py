@@ -33,8 +33,11 @@ async def groups(message: Message):
 
     for i in groups:
         vkgroup, err = await get_group(i.group_id)
-        keyboard.add(Callback(f'{vkgroup.chat_settings.title}', {'group': f'{i.group_id}'}))
-        keyboard.row()
+        if not vkgroup:
+            db.delete_group(int(i.group_id))
+        else:
+            keyboard.add(Callback(f'{vkgroup.chat_settings.title}', {'group': f'{i.group_id}'}))
+            keyboard.row()
     
     keyboard.add(Text('Добавить группу', {'groups': 'add'}), color=KeyboardButtonColor.POSITIVE)
     keyboard.row()
@@ -126,6 +129,7 @@ async def groups_event(event: GroupTypes.MessageEvent):
         vkgroup, err = await get_group(group.group_id)
         if not vkgroup:
             await api.messages.send(peer_id=event.object.peer_id, message=f'Что-то пошло не так: {err}', random_id=0)
+            db.delete_group(int(group.group_id))
             return
 
         group_vip_posts = db.get_dating_vip_posts(group.group_id)
