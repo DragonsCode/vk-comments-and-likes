@@ -13,8 +13,17 @@ group_msg_labeler.auto_rules = [rules.PeerRule(from_chat=True)]
 
 @group_msg_labeler.chat_message()
 async def read_posts(message: Message):
+    txt = message.text
+    user_id = message.from_id
+    user = await api.users.get(user_id)
+    name = f'{user[0].first_name} {user[0].last_name}'
+    
+    if not txt.startswith("http"):
+    	await api.messages.delete(delete_for_all=True, peer_id=message.peer_id, cmids=[message.conversation_message_id])
+    	return f'[id{user_id}|{name}], не правильная ссылка'
     if message.action:
-        return
+    	await api.messages.delete(delete_for_all=True, peer_id=message.peer_id, cmids=[message.conversation_message_id])
+    	return
     
     group = db.get_group_by_group_id(message.peer_id)
     if not group:
