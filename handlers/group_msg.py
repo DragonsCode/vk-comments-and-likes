@@ -13,7 +13,7 @@ group_msg_labeler.auto_rules = [rules.PeerRule(from_chat=True)]
 
 @group_msg_labeler.chat_message()
 async def read_posts(message: Message):
-    txt = message.text
+    txt = message.text or "вк говно"
     user_id = message.from_id
     user = await api.users.get(user_id)
     name = f'{user[0].first_name} {user[0].last_name}'
