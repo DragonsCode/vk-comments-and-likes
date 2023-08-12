@@ -11,6 +11,7 @@ from states import *
 from functions.likes import get_like_post
 from functions.comments import get_post
 from functions.group import get_group
+from functions.pagination import show_group_page, get_total_pages
 
 
 admin_group_labeler = BotLabeler()
@@ -27,26 +28,24 @@ async def groups(message: Message):
     if message.peer_id not in admin_ids:
         return
     
+    await show_group_page(1, message.peer_id)
+
+@admin_group_labeler.message(rules.PayloadContainsRule({'group': 'pages'}))
+async def groups_navigation_handler(message: Message):
+    page = int(message.get_payload_json().get('page', 0))
+    if page == 0:
+        await message.answer('Страница не найдена')
+        return
+
     groups = db.get_all_groups()
-
-    keyboard = Keyboard(inline=True)
-
-    for i in groups:
-        vkgroup, err = await get_group(i.group_id)
-        if not vkgroup:
-            db.delete_group(int(i.group_id))
-        else:
-            keyboard.add(Callback(f'{vkgroup.chat_settings.title}', {'group': f'{i.group_id}'}))
-            keyboard.row()
     
-    keyboard.add(Text('Добавить группу', {'groups': 'add'}), color=KeyboardButtonColor.POSITIVE)
-    keyboard.row()
-    keyboard.add(Text('Назад', {'admin': 'menu'}), color=KeyboardButtonColor.NEGATIVE)
+    if page > get_total_pages(groups):
+        page = get_total_pages(groups)
+    await show_group_page(page, message.peer_id)
 
-    await message.answer('Группы', keyboard=keyboard)
-
-
-@admin_group_labeler.private_message(text='Добавить группу')
+# @admin_group_labeler.private_message(text='Добавить группу')
+@admin_group_labeler.private_message(text='admin')
+@admin_group_labeler.private_message(payload={'groups': 'add'})
 async def add_group_state(message: Message):
     admins = db.get_all_admins()
     admin_ids = [i.user_id for i in admins]
@@ -126,6 +125,10 @@ async def groups_event(event: GroupTypes.MessageEvent):
     group_id = event.object.payload.get('group', False)
     if group_id:
         group = db.get_group_by_group_id(int(group_id))
+        if not group:
+            await api.messages.send(peer_id=event.object.peer_id, message='Группа не найдена', random_id=0)
+            return
+        
         vkgroup, err = await get_group(group.group_id)
         if not vkgroup:
             await api.messages.send(peer_id=event.object.peer_id, message=f'Что-то пошло не так: {err}', random_id=0)

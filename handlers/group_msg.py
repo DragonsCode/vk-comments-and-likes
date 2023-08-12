@@ -1,5 +1,7 @@
 from vkbottle.bot import BotLabeler, Message, rules
 
+import logging
+
 from models import db_api as db
 from config import api
 from functions.comments import get_comment, get_post
@@ -14,31 +16,37 @@ group_msg_labeler.auto_rules = [rules.PeerRule(from_chat=True)]
 @group_msg_labeler.chat_message()
 async def read_posts(message: Message):
     if message.action or message.from_id < 0:
-    	await api.messages.delete(delete_for_all=True, peer_id=message.peer_id, cmids=[message.conversation_message_id])
-    	return
+        try:
+            await api.messages.delete(delete_for_all=True, peer_id=message.peer_id, cmids=[message.conversation_message_id])
+        except Exception as e:
+            logging.error(e)
+        
+        return
+    
     txt = message.text or "вк говно"
     user_id = message.from_id
-    user = await api.users.get(user_id)
-    name = f'{user[0].first_name} {user[0].last_name}'
-    
-    if not txt.startswith("http"):
-    	await api.messages.delete(delete_for_all=True, peer_id=message.peer_id, cmids=[message.conversation_message_id])
-    	return f'[id{user_id}|{name}], не правильная ссылка'
-    
+    user = ''
+    if user_id > 0:
+        user = await api.users.get(user_id)
+    name = 'bot' if user_id < 0 else f'{user[0].first_name} {user[0].last_name}'
     group = db.get_group_by_group_id(message.peer_id)
+    themes = {0: 'комментарий, содержащий как минимум 5 слов,', 1: 'лайк'}
+
     if not group:
         return f'Чат не найден\n\npeer_id: {message.peer_id}'
+    
+    if not txt.startswith("http"):
+        try:
+            await api.messages.delete(delete_for_all=True, peer_id=message.peer_id, cmids=[message.conversation_message_id])
+        except Exception as e:
+            logging.error(e)
+        
+        return f'[id{user_id}|{name}] Неправильная ссылка на пост'
     
     check = get_like if group.theme else get_comment
     
     vip_posts = db.get_dating_vip_posts(message.peer_id)
     vip_done = True
-
-    user_id = message.from_id
-    user = await api.users.get(user_id)
-    name = f'{user[0].first_name} {user[0].last_name}'
-
-    themes = {0: 'комментарий, содержащий как минимум 5 слов,', 1: 'лайк'}
 
     for i in vip_posts:
         vip_ok, vip_comm = await check(user_id, i.link)
@@ -61,11 +69,17 @@ async def read_posts(message: Message):
 
             if message.text in vip_posts_links:
                 await message.answer(f'[id{user_id}|{name}], ваша ссылка уже находится в списке VIP ссылок')
-                await api.messages.delete(delete_for_all=True, peer_id=message.peer_id, cmids=[message.conversation_message_id])
+                try:
+                    await api.messages.delete(delete_for_all=True, peer_id=message.peer_id, cmids=[message.conversation_message_id])
+                except Exception as e:
+                    logging.error(e)
                 return
             elif message.text in posts_links:
                 await message.answer(f'[id{user_id}|{name}], ваша ссылка уже находится в последних 5 ссылках')
-                await api.messages.delete(delete_for_all=True, peer_id=message.peer_id, cmids=[message.conversation_message_id])
+                try:
+                    await api.messages.delete(delete_for_all=True, peer_id=message.peer_id, cmids=[message.conversation_message_id])
+                except Exception as e:
+                    logging.error(e)
                 return
 
             method = get_like_post if group.theme else get_post
@@ -76,7 +90,11 @@ async def read_posts(message: Message):
                 await message.answer(f'[id{user_id}|{name}], ваша ссылка принята')
             else:
                 await message.answer(f'[id{user_id}|{name}] {comm}')
-                await api.messages.delete(delete_for_all=True, peer_id=message.peer_id, cmids=[message.conversation_message_id])
+                try:
+                    await api.messages.delete(delete_for_all=True, peer_id=message.peer_id, cmids=[message.conversation_message_id])
+                except Exception as e:
+                    logging.error(e)
+                return
         
         else:
             text = f'[id{user_id}|{name}], вы должны оставить {themes[group.theme]} на этих постах:\n'
@@ -84,7 +102,11 @@ async def read_posts(message: Message):
                 text+= f'\n{index} - {i.link}'
             
             await message.answer(text)
-            await api.messages.delete(delete_for_all=True, peer_id=message.peer_id, cmids=[message.conversation_message_id])
+            try:
+                await api.messages.delete(delete_for_all=True, peer_id=message.peer_id, cmids=[message.conversation_message_id])
+            except Exception as e:
+                logging.error(e)
+                return
 
     else:
         text = f'[id{user_id}|{name}], прежде чем начать пользоваться, вы должны оставить {themes[group.theme]} на этих VIP постах:\n'
@@ -92,4 +114,7 @@ async def read_posts(message: Message):
             text+= f'\n{index} - {i.link}'
         
         await message.answer(text)
-        await api.messages.delete(delete_for_all=True, peer_id=message.peer_id, cmids=[message.conversation_message_id])
+        try:
+            await api.messages.delete(delete_for_all=True, peer_id=message.peer_id, cmids=[message.conversation_message_id])
+        except Exception as e:
+            logging.error(e)

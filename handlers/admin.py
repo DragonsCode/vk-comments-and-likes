@@ -4,8 +4,9 @@ from vkbottle import Keyboard, KeyboardButtonColor, Text
 from models import db_api as db
 from config import api, state_dispenser
 from states import *
+from functions.pagination import show_admin_page, get_total_pages
 
-
+rules.PayloadContainsRule({'admin': 'next'})
 
 admin_labeler = BotLabeler()
 admin_labeler.vbml_ignore_case = True
@@ -38,21 +39,21 @@ async def admins(message: Message):
 
     if message.peer_id not in admin_ids:
         return
-
-    keyboard = Keyboard(inline=True)
-
-    for i in admins:
-        user = await api.users.get(int(i.user_id))
-        name = f'{user[0].first_name} {user[0].last_name}'
-        keyboard.add(Text(f'Админ {i.user_id} {name}', {'admin': f'{i.user_id}'}))
-        keyboard.row()
     
-    keyboard.add(Text('Добавить админа', {'admins': 'add'}), color=KeyboardButtonColor.POSITIVE)
-    keyboard.row()
-    keyboard.add(Text('Назад', {'admin': 'menu'}), color=KeyboardButtonColor.NEGATIVE)
+    await show_admin_page(1, message.peer_id)
 
-    await message.answer('Админы', keyboard=keyboard)
-
+@admin_labeler.message(rules.PayloadContainsRule({'admin': 'pages'}))
+async def admin_navigation_handler(message: Message):
+    page = int(message.get_payload_json().get('page', 0))
+    if page == 0:
+        await message.answer('Страница не найдена')
+        return
+    
+    admins = db.get_all_admins()
+    
+    if page > get_total_pages(admins):
+        page = get_total_pages(admins)
+    await show_admin_page(page, message.peer_id)
 
 @admin_labeler.private_message(text='Добавить админа')
 async def add_admin_state(message: Message):
@@ -106,6 +107,7 @@ async def admin_info(message: Message, user_id=None, name=None):
         admin = db.get_admin_by_user_id(int(user_id))
         if not admin:
             await message.answer('Админ с таким user ID не найден')
+            return
         
         user = await api.users.get(int(user_id))
         name = f'{user[0].first_name} {user[0].last_name}'
